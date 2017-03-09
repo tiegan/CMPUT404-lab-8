@@ -9,6 +9,20 @@ function preload() {
 
 }
 
+/* URL: http://stackoverflow.com/a/105074/6626414
+   Author: Jon Surrell ( http://stackoverflow.com/users/1432801/jon-surrell )
+   License: CC-SA-BY 3.0 (?)
+   Date: March 8 2017 */
+function guid() {
+  function s4() {
+    return Math.floor((1 + Math.random()) * 0x10000)
+      .toString(16)
+      .substring(1);
+  }
+  return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+    s4() + '-' + s4() + s4() + s4();
+}
+
 var map;
 var layer;
 var cursors;
@@ -16,6 +30,41 @@ var players = {};
 var id = guid();
 players[id] = {};
 var player = players[id];
+
+function Client() {
+
+}
+
+Client.prototype.openConnection = function() {
+  this.ws = new WebSocket("ws://127.0.0.1:8080");
+  this.connected = false;
+  this.ws.onmessage = this.onMessage.bind(this);
+  this.ws.onerror = this.displayError.bind(this);
+  this.ws.onopen = this.connectionOpen.bind(this);
+};
+
+Client.prototype.connectionOpen = function() {
+  this.connected = true;
+  myText.text = 'connected\n';
+};
+
+Client.prototype.onMessage = function(message) {
+  var msg = JSON.parse(message.data);
+  for (var key in msg) {
+    if (key in players) {
+      players[key].x = msg[key].x;
+      players[key].y = msg[key].y;
+    } else {
+      players[key] = game.add.sprite(48, 48, 'player', 1);
+      players[key].x = msg[key].x;
+      players[key].y = msg[key].y;
+    }
+  }
+};
+
+Client.prototype.displayError = function(err) {
+  console.log('Websocketerror: ' + err);
+};
 
 function create() {
 
@@ -103,52 +152,4 @@ function render() {
 
     // game.debug.body(player);
 
-}
-
-function Client() {
-
-}
-
-Client.prototype.openConnection = function() {
-  this.ws = new WebSocket("ws://127.0.0.1:8080");
-  this.connected = false;
-  this.ws.onmessage = this.onMessage.bind(this);
-  this.ws.onerror = this.displayError.bind(this);
-  this.ws.onopen = this.connectionOpen.bind(this);
-};
-
-Client.prototype.connectionOpen = function() {
-  this.connected = true;
-  myText.text = 'connected\n';
-};
-
-Client.prototype.onMessage = function(message) {
-  var msg = JSON.parse(message.data);
-  for (var key in msg) {
-    if (key in players) {
-      players[key].x = msg[key].x;
-      players[key].y = msg[key].y;
-    } else {
-      players[key] = game.add.sprite(48, 48, 'player', 1);
-      players[key].x = msg[key].x;
-      players[key].y = msg[key].y;
-    }
-  }
-};
-
-Client.prototype.displayError = function(err) {
-  console.log('Websocketerror: ' + err);
-};
-
-/* URL: http://stackoverflow.com/a/105074/6626414
-   Author: Jon Surrell ( http://stackoverflow.com/users/1432801/jon-surrell )
-   License: CC-SA-BY 3.0 (?) */
-function guid() {
-  function s4() {
-    return Math.floor((1 + Math.random()) * 0x10000)
-      .toString(16)
-      .substring(1);
-  }
-  return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
-    s4() + '-' + s4() + s4() + s4();
 }
